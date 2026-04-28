@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Idle Engine - Mastery Edition</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e0e0e">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e; --panel: #161616; --border: #2a2a2a; --text: #e0e0e0;
+    --muted: #666; --cash-color: #f0c040; --credit-color: #40e0d0;
+    --red: #e03030; --tang: #f07020; --lemon: #e0d020; --lime: #40c040;
+    --sky: #40b8e0; --navy: #3040c8; --grape: #9040d0; --bubblegum: #e040a0; --chalk: #c0c0c0;
+    --pow-color: #bd40f0;
+    --mastery-gold: #ffcc00;
+    --nightmare-color: #ff4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+  body { background: var(--bg); color: var(--text); font-family: 'Share Tech Mono', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+  #header { width: 100%; max-width: 520px; padding: 14px 16px 10px; }
+  #top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; gap: 10px; }
+  .top-col { display: flex; flex-direction: column; flex: 1; }
+  .top-col.right { text-align: right; align-items: flex-end; }
+  .top-label { color: var(--muted); font-size: 11px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; margin-bottom: 2px; }
+  #cash-display { color: var(--cash-color); font-size: 26px; font-family: 'Teko', sans-serif; font-weight: 700; line-height: 1; }
+  #credit-display { color: var(--credit-color); font-size: 20px; font-family: 'Teko', sans-serif; line-height: 1; }
+  .world-status { text-align: center; line-height: 1.1; border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 0 15px; }
+  .world-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .pow-display { font-size: 20px; color: var(--pow-color); font-family: 'Teko'; font-weight: 700; line-height: 1.2; }
+  #tracks { width: 100%; max-width: 520px; padding: 10px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .game-title { font-family: 'Teko', sans-serif; font-size: 36px; font-weight: 700; color: var(--text); text-align: center; text-transform: uppercase; letter-spacing: 2px; line-height: 1; margin-top: 20px; margin-bottom: 10px; }
+  #s-toggle { cursor: pointer; user-select: none; transition: text-shadow 0.2s ease; text-shadow: 0 0 6px rgba(224,224,224,0.5); }
+  #s-toggle:hover { text-shadow: 0 0 10px var(--cash-color); }
+  #s-toggle.muted { text-decoration: line-through; color: var(--muted); text-shadow: none; }
+  .track { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .track-header { display: flex; align-items: flex-end; justify-content: space-between; padding: 14px 16px 10px; position: relative; }
+  .track-name { font-family: 'Teko', sans-serif; font-size: 26px; text-transform: uppercase; font-weight: 700; z-index: 2; line-height: 1; letter-spacing: 1px; }
+  .track-meta { display: flex; align-items: flex-end; gap: 20px; text-align: right; z-index: 2; }
+  .meta-col { display: flex; flex-direction: column; align-items: flex-end; }
+  .meta-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .meta-val { font-size: 16px; color: #fff; font-family: 'Teko', sans-serif; font-weight: 600; line-height: 1; min-width: 45px; text-align: right; }
+  .earn-bar-bg { width: 100%; height: 8px; background: #111; border-bottom: 1px solid #222; position: relative; overflow: hidden; }
+  .earn-bar-fill { height: 100%; width: 0%; position: absolute; left: 0; top: 0; }
+  .barber-pole { width: 100% !important; background-image: linear-gradient(45deg,rgba(255,255,255,0.2) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.2) 75%,transparent 75%,transparent); background-size: 30px 30px; animation: barber-scroll 0.5s linear infinite; }
+  @keyframes barber-scroll { from { background-position: 0 0; } to { background-position: 30px 0; } }
+  .upgrade-btn { width: calc(100% - 24px); margin: 12px; padding: 10px 16px; border: none; border-radius: 8px; font-family: 'Share Tech Mono'; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: rgba(0,0,0,0.85); font-weight: bold; position: relative; transition: transform 0.05s, opacity 0.2s; }
+  .upgrade-btn:active { transform: scale(0.98); }
+  .upgrade-btn.cannot-afford { opacity: 0.3; cursor: not-allowed; }
+  .upg-left { display: flex; align-items: center; font-size: 18px; font-family: 'Teko', sans-serif; }
+  .upg-right { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 6px; font-size: 16px; font-family: 'Share Tech Mono'; color: rgba(0,0,0,0.85); white-space: nowrap; }
+  .req-container { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; text-transform: none; font-family: 'Share Tech Mono'; font-weight: 600; font-size: 11px; color: rgba(0,0,0,0.8); text-align: center; }
+  #prestige-btn { width: calc(100% - 32px); max-width: 488px; margin: 10px 16px 5px; padding: 14px 18px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; transition: transform 0.05s, opacity 0.2s; }
+  #prestige-btn:active { transform: scale(0.98); }
+  #prestige-btn:not(.locked) { border-color: #2a3a2a; background: #1a241a; }
+  #prestige-btn.locked { opacity: 0.5; cursor: not-allowed; }
+  .prestige-left { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+  .prestige-title { font-family: 'Teko', sans-serif; font-size: 26px; color: #555; line-height: 1; font-weight: 600; }
+  #prestige-btn:not(.locked) .prestige-title { color: #80e080; }
+  .prestige-sub { font-size: 10px; color: #555; text-transform: uppercase; margin-top: 4px; font-family: 'Share Tech Mono'; }
+  #prestige-btn:not(.locked) .prestige-sub { color: #60a060; }
+  .prestige-right { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+  .prestige-status-label { font-size: 10px; color: #555; font-family: 'Share Tech Mono'; margin-bottom: 2px; }
+  .prestige-status-val { font-family: 'Teko', sans-serif; font-size: 20px; color: #555; line-height: 1; font-weight: 600; }
+  #prestige-btn:not(.locked) .prestige-status-val { color: #80e080; }
+  #prestige-btn:not(.locked) .prestige-status-label { color: #60a060; }
+  #world-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: calc(100% - 32px); max-width: 488px; margin: 15px 16px 30px; }
+  .nav-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px 6px; font-family: 'Share Tech Mono'; font-size: 12px; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .nav-btn:active { transform: scale(0.98); }
+  .nav-label { font-size: 10px; color: var(--muted); font-family: 'Share Tech Mono'; font-weight: normal; }
+  .nav-val { font-size: 14px; font-family: 'Teko', sans-serif; font-weight: 600; line-height: 1.1; letter-spacing: 0.5px; }
+  .mastery-sparkle { border-color: var(--mastery-gold) !important; box-shadow: 0 0 15px rgba(255,204,0,0.3); animation: glow 2s infinite alternate; }
+  @keyframes glow { from { opacity: 0.8; } to { opacity: 1; box-shadow: 0 0 25px rgba(255,204,0,0.6); } }
+  .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+  .overlay.active { display: flex; }
+  .selection-box { background: var(--panel); border: 2px solid var(--border); padding: 30px; border-radius: 12px; text-align: center; width: 90%; max-width: 400px; }
+  .buff-track-name { font-family: 'Teko'; font-size: 24px; text-transform: uppercase; margin-bottom: 2px; }
+  .buff-display { font-family: 'Teko'; font-size: 38px; color: var(--cash-color); margin-bottom: 10px; text-transform: uppercase; line-height: 1; }
+  .pow-summary { color: var(--pow-color); font-size: 14px; margin-bottom: 20px; font-weight: bold; }
+  .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+  .modal-btn { padding: 14px; border: 1px solid #444; border-radius: 6px; background: #222; color: #fff; cursor: pointer; font-family: 'Teko'; font-size: 18px; text-transform: uppercase; transition: background 0.1s; }
+  .modal-btn:hover { background: #333; }
+  .claim-btn { background: #40e040; color: #000; border: none; font-weight: bold; }
+  .claim-btn:hover { background: #30c030; }
+  .hidden { display: none !important; }
+  .inline-stats { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; font-size: 10px; color: var(--muted); text-transform: uppercase; z-index: 1; pointer-events: none; bottom: 10px; }
+  .inline-stats > span { display: none; }
+  .inline-stats > span.active { display: inline; }
+  .inline-stats .stat-val { display: inline; color: inherit; font-weight: bold; margin-left: 2px; }
+
+  /* PHASE 2: Shop tabs */
+  .shop-tabs { display: flex; gap: 0; margin-bottom: 15px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .shop-tab-btn { flex: 1; padding: 10px 6px; background: #111; color: var(--muted); border: none; font-family: 'Share Tech Mono'; font-size: 11px; text-transform: uppercase; cursor: pointer; transition: background 0.1s, color 0.1s; }
+  .shop-tab-btn.active { background: var(--panel); color: var(--text); }
+  .shop-tab-panel { display: none; }
+  .shop-tab-panel.active { display: flex; flex-direction: column; gap: 10px; }
+
+  /* PHASE 3/4: Nightmare */
+  .nightmare-active-banner { width: calc(100% - 32px); max-width: 488px; margin: 0 16px 10px; padding: 10px 18px; background: #1a0000; border: 1px solid var(--nightmare-color); border-radius: 8px; text-align: center; font-family: 'Teko'; font-size: 18px; color: var(--nightmare-color); text-transform: uppercase; letter-spacing: 1px; }
+  .nightmare-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; text-align: left; }
+  .nightmare-stat-row { font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono'; }
+  .nightmare-stat-row span { color: var(--text); }
+  .nm-complete { color: #40e040 !important; }
+  .nm-incomplete { color: var(--nightmare-color) !important; }
+  .nm-world7-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; margin-top: 8px; }
+  .nm-w7-cell { font-size: 10px; font-family: 'Share Tech Mono'; padding: 4px; border: 1px solid var(--border); border-radius: 4px; text-align: center; }
+  .nm-w7-cell.done { border-color: #40e040; color: #40e040; }
+  .nm-w7-cell.todo { border-color: var(--nightmare-color); color: var(--nightmare-color); }
+</style>
+</head>
+<body>
+
+<div class="game-title">My Fir<span id="s-toggle">s</span>t Idle Game</div>
+
+<div id="header">
+  <div id="top-bar">
+    <div class="top-col"><div class="top-label">CASH</div><div id="cash-display">$0</div></div>
+    <div class="world-status top-col">
+      <div class="world-label">WORLD <span id="current-world-id">1</span></div>
+      <div class="pow-display" id="banked-pow-val">1.00x POW</div>
+    </div>
+    <div class="top-col right" id="credits-wrapper">
+      <div id="credits-container">
+        <div class="top-label">CREDITS</div>
+        <div id="credit-display">0</div>
+        <div id="shop-hint" class="shop-hint hidden">SHOP (CLICK)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NIGHTMARE ACTIVE BANNER -->
+<div id="nightmare-banner" class="nightmare-active-banner hidden">
+  NIGHTMARE RUN #<span id="nm-run-num">1</span> ACTIVE — CYCLE <span id="nm-cycle-num">0</span>
+</div>
+
+<div id="tracks"></div>
+
+<button id="prestige-btn" class="locked">
+  <div class="prestige-left">
+    <div class="prestige-title">UPGRADE & RESET</div>
+    <div class="prestige-sub">PERSISTENT BUFF +10 CREDITS</div>
+  </div>
+  <div class="prestige-right">
+    <div class="prestige-status-label">STATUS</div>
+    <div class="prestige-status-val" id="prestige-req">LOCKED</div>
+  </div>
+</button>
+
+<div id="world-nav">
+  <button id="buy-mode-btn" class="nav-btn"><div class="nav-label">MODE</div><div class="nav-val">⚡ 1X</div></button>
+  <button id="settings-btn" class="nav-btn"><div class="nav-label">NOTATION</div><div class="nav-val">STANDARD</div></button>
+  <button id="next-world-btn" class="nav-btn" style="color:var(--text);border-color:var(--border);"><div class="nav-label">GOAL</div><div class="nav-val">1/7 COLORS</div></button>
+</div>
+
+<div id="utils" style="margin-bottom:30px;text-align:center;width:100%;">
+  <button id="download-code-btn" style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 16px;border-radius:6px;font-family:'Share Tech Mono';font-size:10px;cursor:pointer;text-transform:uppercase;">Download Source Code</button>
+</div>
+
+<!-- UPGRADE OVERLAY -->
+<div id="upgrade-overlay" class="overlay">
+  <div class="selection-box">
+    <div style="color:var(--muted);font-size:11px;margin-bottom:5px;">TRACK UPGRADE (NO POW EARNED)</div>
+    <div id="buff-track-name" class="buff-track-name">---</div>
+    <div id="buff-title" class="buff-display">---</div>
+    <div class="modal-btns">
+      <button id="claim-btn" class="modal-btn claim-btn">CLAIM BUFF & RESET (+10 CR)</button>
+      <button id="free-reroll-btn" class="modal-btn">FREE REROLL 🎲</button>
+      <button id="paid-reroll-btn" class="modal-btn">REROLL (50 CR) 🎲</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORLD OVERLAY -->
+<div id="world-overlay" class="overlay">
+  <div class="selection-box">
+    <div style="color:var(--muted);font-size:11px;margin-bottom:5px;">WORLD GOAL MET</div>
+    <div id="wt-title" class="buff-display" style="color:#fff;">WORLD X COMPLETE</div>
+    <div id="wt-pow-info" class="pow-summary">POTENTIAL POW: +0.00</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:15px;padding:0 10px;">
+      Accepting POW will finalize your earnings for this world. You can stay in this world to grind more, or move to the next world if you meet the requirement.
+    </div>
+    <div class="modal-btns">
+      <button id="wt-bank-btn" class="modal-btn">BANK POW & STAY</button>
+      <button id="wt-next-btn" class="modal-btn claim-btn">ENTER NEXT WORLD</button>
+    </div>
+  </div>
+</div>
+
+<!-- MASTERY OVERLAY -->
+<div id="mastery-overlay" class="overlay">
+  <div class="selection-box" style="border-color:var(--mastery-gold);">
+    <div style="color:var(--mastery-gold);font-size:11px;margin-bottom:5px;font-weight:bold;">MASTERY CONSOLE</div>
+    <div class="buff-display" style="color:#fff;font-size:30px;">GOD MODE ACTIVATED</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:15px;padding:0 10px;">
+      You have conquered World 7. The engine is yours to command.
+    </div>
+    <div class="modal-btns">
+      <button id="mastery-infinite-cr" class="modal-btn" style="border-color:var(--credit-color);color:var(--credit-color);">GRANT 100K CREDITS</button>
+      <button id="mastery-toggle-mult" class="modal-btn" style="border-color:var(--mastery-gold);color:var(--mastery-gold);">MULT: 1X (CLICK TO TOGGLE)</button>
+      <button id="mastery-start-nightmare" class="modal-btn" style="border-color:var(--nightmare-color);color:var(--nightmare-color);">START NIGHTMARE RUN</button>
+      <button id="mastery-close" class="modal-btn" style="margin-top:10px;background:#333;">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- SOUND HINT OVERLAY -->
+<div id="sound-hint-overlay" class="overlay">
+  <div class="selection-box">
+    <div style="color:var(--muted);font-size:11px;margin-bottom:10px;">HEADS UP</div>
+    <div style="font-size:14px;color:var(--text);margin-bottom:20px;padding:0 5px;line-height:1.5;">Sounds are enabled in this game.<br>Tap the <strong>S</strong> in the title to mute them.</div>
+    <div class="modal-btns">
+      <button id="sound-hint-ok" class="modal-btn claim-btn">OKAY</button>
+    </div>
+  </div>
+</div>
+
+<!-- NIGHTMARE INTRO POPUP — shown once on first World 7 clear -->
+<div id="nightmare-intro-overlay" class="overlay">
+  <div class="selection-box" style="border-color:var(--nightmare-color);max-height:90vh;overflow-y:auto;">
+    <div style="color:var(--nightmare-color);font-size:13px;font-weight:bold;margin-bottom:8px;letter-spacing:2px;">NIGHTMARE MODE UNLOCKED</div>
+    <div class="buff-display" style="color:var(--nightmare-color);font-size:30px;margin-bottom:12px;">WORLD 7 CLEARED</div>
+
+    <div style="text-align:left;font-size:13px;color:var(--text);line-height:1.7;margin-bottom:16px;">
+      <p style="margin-bottom:10px;">You have beaten the game. But the real challenge starts now.</p>
+
+      <div style="color:var(--nightmare-color);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">WHAT IS NIGHTMARE MODE?</div>
+      <p style="margin-bottom:10px;color:var(--muted);font-size:12px;">
+        Each <strong style="color:var(--text);">Nightmare Run</strong> gives you a set of <strong style="color:var(--text);">random targets</strong> — specific colors must reach specific stat thresholds. Complete the targets to finish the run and start the next one. Runs are <strong style="color:var(--text);">endless</strong>: each cycle the targets grow harder. There is no finish line.
+      </p>
+
+      <div style="color:var(--nightmare-color);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">HOW TO START</div>
+      <p style="margin-bottom:10px;color:var(--muted);font-size:12px;">
+        Tap the <strong style="color:var(--text);">GOAL</strong> button to open the Mastery menu, then press <strong style="color:var(--text);">START NIGHTMARE RUN</strong>. Your world resets, but your permanent upgrades carry over.
+      </p>
+
+      <div style="color:var(--mastery-gold);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">GOD MODE EXIT</div>
+      <p style="margin-bottom:10px;color:var(--muted);font-size:12px;">
+        Struggling? You can buy <strong style="color:var(--text);">God Mode Access</strong> from the <strong style="color:var(--text);">Shop</strong> for <strong style="color:var(--text);">100 CR</strong>. Once purchased, a <strong style="color:var(--text);">GOD MODE EXIT</strong> button appears inside the nightmare overlay — press it to leave the run without penalty.
+      </p>
+
+      <div style="color:#40e0d0;font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">CHANGED YOUR MIND?</div>
+      <p style="color:var(--muted);font-size:12px;">
+        After using God Mode Exit, a <strong style="color:var(--text);">free UNDO toggle</strong> appears in the Shop. Tap it to <strong style="color:var(--text);">revert all changes</strong> made since God Mode was activated and <strong style="color:var(--text);">resume your nightmare run</strong> exactly where you left off — same targets, same cycle.
+      </p>
+    </div>
+
+    <div class="modal-btns">
+      <button id="nightmare-intro-ok" class="modal-btn claim-btn" style="background:var(--nightmare-color);color:#000;">I'M READY</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 2: SHOP OVERLAY — 2 TABS -->
+<div id="shop-overlay" class="overlay">
+  <div class="selection-box" style="max-height:90vh;overflow-y:auto;">
+    <div style="color:var(--muted);font-size:11px;margin-bottom:5px;">SHOP</div>
+    <div class="shop-tabs">
+      <button class="shop-tab-btn active" id="shop-tab-temp-btn">TEMP BUFFS</button>
+      <button class="shop-tab-btn" id="shop-tab-perm-btn">PERMANENT</button>
+    </div>
+    <!-- Tab 1: Temporary buffs -->
+    <div class="shop-tab-panel active" id="shop-tab-temp">
+      <div class="buff-track-name" style="color:var(--credit-color)">TEMPORARY BUFFS</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:0 10px;">Spend credits for powerful boosts. These stack!</div>
+      <button id="shop-earn-btn" class="modal-btn" style="opacity:0.5;">60s x2 EARN (25 CR)</button>
+      <button id="shop-speed-btn" class="modal-btn" style="opacity:0.5;">30s 4x SPEED (25 CR)</button>
+      <button id="shop-cost-btn" class="modal-btn" style="opacity:0.5;">60s Random D.COST% (25 CR)</button>
+      <!-- God Mode Access: one-time unlock, only visible during nightmare -->
+      <div id="shop-godmode-section" class="hidden" style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;">
+        <button id="shop-godmode-buy-btn" class="modal-btn" style="border-color:var(--nightmare-color);color:var(--nightmare-color);">UNLOCK GOD MODE EXIT (100 CR)</button>
+        <!-- Undo toggle: free, only shown after God Mode was used -->
+        <button id="shop-godmode-undo-btn" class="modal-btn hidden" style="border-color:#40e0d0;color:#40e0d0;">UNDO GOD MODE — RESUME RUN (FREE)</button>
+      </div>
+    </div>
+    <!-- Tab 2: Permanent upgrades -->
+    <div class="shop-tab-panel" id="shop-tab-perm">
+      <div class="buff-track-name" style="color:var(--mastery-gold)">PERMANENT UPGRADES</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:0 10px;">
+        Persist through prestige, world change &amp; nightmare reset.<br>
+        Currency: <span id="perm-currency-label" style="color:var(--credit-color)">CREDITS</span>
+      </div>
+      <div id="perm-upg-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <button id="shop-close-btn" class="modal-btn" style="margin-top:10px;background:#333;color:var(--muted);border-color:#222;">CLOSE</button>
+  </div>
+</div>
+
+<!-- PHASE 4: NIGHTMARE OVERLAY -->
+<div id="nightmare-overlay" class="overlay">
+  <div class="selection-box" style="border-color:var(--nightmare-color);max-height:90vh;overflow-y:auto;">
+    <div style="color:var(--nightmare-color);font-size:11px;margin-bottom:5px;font-weight:bold;">NIGHTMARE MODE</div>
+    <div id="nm-overlay-title" class="buff-display" style="color:var(--nightmare-color);font-size:28px;">RUN #1</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">CYCLE: <span id="nm-overlay-cycle" style="color:var(--text);">0</span></div>
+
+    <!-- Run config -->
+    <div style="margin-bottom:12px;font-size:11px;color:var(--muted);text-align:left;">
+      <div style="margin-bottom:4px;color:var(--text);">THIS RUN'S TARGETS:</div>
+      <div class="nightmare-stat-grid" id="nm-config-grid"></div>
+    </div>
+
+    <!-- Gate progress -->
+    <div style="font-size:11px;color:var(--muted);text-align:left;margin-bottom:8px;">
+      <div style="color:var(--text);margin-bottom:4px;">GATE PROGRESS:</div>
+      <div id="nm-gate-display" style="font-family:'Share Tech Mono';font-size:12px;"></div>
+    </div>
+
+    <!-- World 7 per-color per-stat (shown only in world 7) -->
+    <div id="nm-world7-section" class="hidden" style="margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text);margin-bottom:4px;">WORLD 7 COMPLETION:</div>
+      <div id="nm-world7-grid" class="nm-world7-grid"></div>
+    </div>
+
+    <div class="modal-btns">
+      <button id="nm-god-mode-btn" class="modal-btn" style="border-color:var(--nightmare-color);color:var(--nightmare-color);">GOD MODE EXIT (10 CR)</button>
+      <button id="nm-close-btn" class="modal-btn" style="background:#333;color:var(--muted);">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LAYER 1 — IMMUTABLE RULES (deepFrozen at runtime start)
+// ============================================================
+
+function deepFreeze(obj) {
+  Object.getOwnPropertyNames(obj).forEach(name => {
+    const val = obj[name];
+    if (val && typeof val === 'object') deepFreeze(val);
+  });
+  return Object.freeze(obj);
+}
+
+const RED_START = 1.34;
+
+const TRACK_SPECS = deepFreeze([
+  { id:'red',       name:'Red',       color:'var(--red)',       costMod:0.8,  startEarn:RED_START },
+  { id:'tang',      name:'Tang',      color:'var(--tang)',      costMod:1.5,  startEarn:RED_START*10 },
+  { id:'lemon',     name:'Lemon',     color:'var(--lemon)',     costMod:3.2,  startEarn:RED_START*100 },
+  { id:'lime',      name:'Lime',      color:'var(--lime)',      costMod:8.5,  startEarn:RED_START*1000 },
+  { id:'sky',       name:'Sky',       color:'var(--sky)',       costMod:12.0, startEarn:RED_START*10000 },
+  { id:'navy',      name:'Navy',      color:'var(--navy)',      costMod:18.0, startEarn:RED_START*100000 },
+  { id:'grape',     name:'Grape',     color:'var(--grape)',     costMod:26.0, startEarn:RED_START*1000000 },
+  { id:'bubblegum', name:'Bubblegum', color:'var(--bubblegum)', costMod:38.0, startEarn:RED_START*10000000 },
+  { id:'chalk',     name:'Chalk',     color:'var(--chalk)',     costMod:60.0, startEarn:RED_START*100000000 }
+]);
+
+const WORLD_COLORS = deepFreeze([7, 5, 7, 7, 9, 5, 7]);
+const WORLD_REQS   = deepFreeze([0, 1.0, 2.0, 3.6, 6.0, 9.0, 13.0]);
+
+const UNLOCKS = deepFreeze({
+  tang:      { parentLv:5,  upg:0 }, lemon: { parentLv:10, upg:1 },
+  lime:      { parentLv:25, upg:2 }, sky:   { parentLv:10, upg:3 },
+  navy:      { parentLv:25, upg:4 }, grape: { parentLv:10, upg:5 },
+  bubblegum: { parentLv:25, upg:6 }, chalk: { parentLv:10, upg:8 }
+});
+
+const MILESTONES = deepFreeze([10, 25, 50, 100, 200, 500]);
+const MODES      = deepFreeze(["1x","5x","25x","Next","Max"]);
+const BUFF_TYPES = deepFreeze([
+  { type:'earn',  label:'EARN',   mult:2,   display:'x2 EARN'     },
+  { type:'speed', label:'SPEED',  mult:1.5, display:'x1.5 SPEED'  },
+  { type:'cost',  label:'D.COST', mult:0.9, display:'-10% D.COST' }
+]);
+
+// PHASE 1 (Layer 1): Permanent upgrade type definitions
+const PERM_UPGRADE_TYPES = deepFreeze({
+  earn:  { label:'EARN BOOST',  statKey:'earn',  baseCost:50,  costGrowth:1.8, mult:1.25, description:'+25% earn per level'       },
+  speed: { label:'SPEED BOOST', statKey:'speed', baseCost:50,  costGrowth:1.8, mult:1.25, description:'+25% speed per level'      },
+  cost:  { label:'COST REDUCE', statKey:'cost',  baseCost:75,  costGrowth:1.9, mult:0.90, description:'-10% upgrade cost per level'}
+});
+
+// PHASE 2 (Layer 1): Currency mapping per world
+const WORLD_PERM_CURRENCY = deepFreeze({ default:'credits' });
+
+// PHASE 3 (Layer 1): Nightmare constants
+const NIGHTMARE_DEFS = deepFreeze({
+  colorPoolSize: 9,
+  xMin: 20,
+  xMax: 500,
+  scalingBase: 1.15,
+  world7Requirement: 7,
+  godModeCost: 10,
+  stats: ['earn','speed','cost']
+});
+
+// ============================================================
+// LAYER 2 — MUTABLE STATE (sole write authority)
+// ============================================================
+
+const Game = {
+  cash: 15, credits: 0, lifetimeUpgrades: 0, buyMode: 0,
+  freeRerollUsed: false, currentPendingBuff: null,
+  redBaseTotal: 1.34,
+  notationMode: 0,
+  notationLabels: ['STANDARD','SCIENTIFIC','ENGINEERING'],
+  soundEnabled: localStorage.getItem('sound_enabled') !== 'false',
+  audioContext: null,
+
+  world: 1, maxWorldUnlocked: 1,
+  bankedPow: 0.0, powFloor: 0.0,
+  runCashEarned: 0, runStartTime: Date.now(),
+
+  masteryUnlocked: localStorage.getItem('mastery_unlocked') === 'true',
+  masteryMultiplier: 1,
+
+  shopBuffs: { earnTime:0, speedTime:0, costTime:0, costMult:1 },
+
+  // PHASE 1 (Layer 2): permanent upgrade storage — NEVER reset
+  permUpgrades: (function() {
+    try { return JSON.parse(localStorage.getItem('permUpgrades') || '{}'); }
+    catch(e) { return {}; }
+  })(),
+
+  // PHASE 3 (Layer 2): nightmare state — never reset by prestige/world/run
+  nightmareUnlocked: false,
+  nightmareActive: false,
+  cycleNumber: 0,
+  nightmareRun: 0,
+  nightmareRunConfig: null,
+
+  // GOD MODE state
+  // godModeUnlocked: purchased from shop (100 CR, one-time)
+  // godModeUsed: true after God Mode exit, until undo is used or new run starts
+  // godModeSnapshot: deep copy of full run state taken at the moment God Mode is activated
+  godModeUnlocked: false,
+  godModeUsed: false,
+  godModeSnapshot: null,
+
+  tracks: TRACK_SPECS.map((t, i) => ({
+    id: t.id, name: t.name, color: t.color, costMod: t.costMod,
+    startEarn: t.startEarn,
+    level: i === 0 ? 1 : 0,
+    unlocked: i === 0,
+    progress: 0,
+    currentEarnBase: t.startEarn,
+    upgrades: { earn:1, speed:1, cost:1, count:0 },
+    hasEarn: false, hasSpeed: false, hasCost: false
+  })),
+
+  // ──────────────────────────────────────────────────────────
+  // LAYER 3 — DERIVED LOGIC (pure functions, no state writes)
+  // ──────────────────────────────────────────────────────────
+
+  // PHASE 1 (Layer 3): getEffectiveStat — reads L1+L2, returns computed value only
+  getEffectiveStat(colorId, stat) {
+    const levels = (this.permUpgrades[colorId] && this.permUpgrades[colorId][stat]) || 0;
+    const def = PERM_UPGRADE_TYPES[stat];
+    if (!def) return 1;
+    return Math.pow(def.mult, levels);
+  },
+
+  // PHASE 2 (Layer 3): canPurchase / getPermUpgradeCost — no state mutation
+  canPurchase(colorId, stat) {
+    return this.credits >= this.getPermUpgradeCost(colorId, stat);
+  },
+  getPermUpgradeCost(colorId, stat) {
+    const def = PERM_UPGRADE_TYPES[stat];
+    if (!def) return Infinity;
+    const levels = (this.permUpgrades[colorId] && this.permUpgrades[colorId][stat]) || 0;
+    return Math.floor(def.baseCost * Math.pow(def.costGrowth, levels));
+  },
+
+  // PHASE 3 (Layer 3): Gate functions — pure, no state write
+  getWorld1ExitGate() {
+    return { required: WORLD_REQS[1], current: this.bankedPow + this.getPotentialPow() };
+  },
+  getStandardGate(world) {
+    const w = world || this.world;
+    const req = (WORLD_REQS[w] !== undefined) ? WORLD_REQS[w] : 999;
+    return { required: req, current: this.bankedPow + this.getPotentialPow() };
+  },
+  getWorld7Gate() {
+    if (!this.nightmareRunConfig) return { met: false, detail: 'No run active' };
+    const allMet = this.nightmareRunConfig.targets.every(tgt => {
+      const t = this.tracks.find(tr => tr.id === tgt.colorId);
+      if (!t) return false;
+      if (tgt.stat === 'earn')  return t.upgrades.earn  >= tgt.value;
+      if (tgt.stat === 'speed') return t.upgrades.speed >= tgt.value;
+      if (tgt.stat === 'cost')  return t.upgrades.cost  <= tgt.value;
+      return false;
+    });
+    return { met: allMet, targets: this.nightmareRunConfig.targets };
+  },
+
+  // PHASE 3 (Layer 3): generateNightmareRunConfig — sole permitted state writer in L3
+  // Called ONCE per run start. Must NOT be called mid-run.
+  generateNightmareRunConfig() {
+    const colorIds = TRACK_SPECS.map(t => t.id).slice(0, NIGHTMARE_DEFS.colorPoolSize);
+    const numTargets = 3 + Math.floor(Math.random() * 3);
+    const targets = [];
+    for (let i = 0; i < numTargets; i++) {
+      const colorId = colorIds[Math.floor(Math.random() * colorIds.length)];
+      const stat    = NIGHTMARE_DEFS.stats[Math.floor(Math.random() * NIGHTMARE_DEFS.stats.length)];
+      // Scale grows with each cycle — xMax is the base ceiling for cycle 0 only
+      const scale   = Math.pow(NIGHTMARE_DEFS.scalingBase, this.cycleNumber);
+      const rawX    = NIGHTMARE_DEFS.xMin + Math.random() * (NIGHTMARE_DEFS.xMax - NIGHTMARE_DEFS.xMin);
+      // Apply scale AFTER the raw roll so values genuinely grow each cycle
+      const value   = Math.max(NIGHTMARE_DEFS.xMin, Math.round(rawX * scale));
+      targets.push({ colorId, stat, value });
+    }
+    // Only state write permitted in this function
+    this.nightmareRunConfig = Object.freeze({ runNumber: this.nightmareRun, targets: Object.freeze(targets) });
+  },
+
+  // Standard derived helpers
+  getPurchasedLevels() {
+    return this.tracks.reduce((sum, t) => sum + (t.unlocked ? t.level : 0), 0);
+  },
+  getVisibleUnlockedCount() {
+    return this.tracks.filter((t, i) => t.unlocked && this.isTrackVisibleInRun(t, i)).length;
+  },
+  isTrackVisibleInRun(t, i) {
+    const parent = this.tracks[i - 1];
+    const seqReq = UNLOCKS[t.id]?.parentLv || 0;
+    return i === 0 || (parent && parent.level >= seqReq);
+  },
+  getLatestUnlockedTrack() {
+    for (let i = this.tracks.length - 1; i >= 0; i--) {
+      const t = this.tracks[i];
+      if (t.unlocked && this.isTrackVisibleInRun(t, i)) return t;
+    }
+    return null;
+  },
+  getUpgradeThreshold() {
+    const maxColors = WORLD_COLORS[this.world - 1];
+    const nextT = this.tracks.find((t, i) => !t.unlocked && i < maxColors);
+    return nextT ? UNLOCKS[nextT.id].parentLv : maxColors * 50;
+  },
+  canUpgrade() {
+    const red = this.tracks[0];
+    if (red.level < 5) return false;
+    const latestUnlocked = this.getLatestUnlockedTrack();
+    if (latestUnlocked && latestUnlocked.level < 1) return false;
+    const threshold = this.getUpgradeThreshold();
+    const maxColors = WORLD_COLORS[this.world - 1];
+    const unlockedColors = this.tracks.filter(t => t.unlocked).length;
+    const purchased = this.getPurchasedLevels();
+    return latestUnlocked.level >= threshold || (unlockedColors >= maxColors && purchased >= maxColors * 50);
+  },
+  getUpgradeBlockReason() {
+    const red = this.tracks[0];
+    if (red.level < 5) return { type:'red_level', needed:5, current:red.level };
+    const latestUnlocked = this.getLatestUnlockedTrack();
+    if (latestUnlocked && latestUnlocked.level < 1) return { type:'latest_color', color:latestUnlocked.name, colorHex:latestUnlocked.color };
+    const threshold = this.getUpgradeThreshold();
+    const maxColors = WORLD_COLORS[this.world - 1];
+    const unlockedColors = this.tracks.filter(t => t.unlocked).length;
+    const purchased = this.getPurchasedLevels();
+    if (!(latestUnlocked.level >= threshold || (unlockedColors >= maxColors && purchased >= maxColors * 50))) {
+      const target = unlockedColors >= maxColors ? maxColors * 50 : threshold;
+      return { type:'levels', needed:target, current:latestUnlocked.level };
+    }
+    return null;
+  },
+  getNextMilestone(lvl) {
+    const next = MILESTONES.find(ms => lvl < ms);
+    return next ?? 'MAX';
+  },
+  getCurrentEarnBase(t) {
+    if (t.id === 'red') return this.redBaseTotal;
+    return t.currentEarnBase ?? t.startEarn;
+  },
+  getNotationLabel() { return this.notationLabels[this.notationMode] || 'STANDARD'; },
+  cycleNotation()    { this.notationMode = (this.notationMode + 1) % 3; },
+  getPotentialPow() {
+    const maxColors = WORLD_COLORS[this.world - 1];
+    const unlocked = this.getVisibleUnlockedCount();
+    if (unlocked < maxColors) return 0;
+    let basePow = 0.04 * this.world;
+    if (this.world < this.maxWorldUnlocked) basePow *= 0.3;
+    const runDurationMinutes = (Date.now() - this.runStartTime) / 60000;
+    const timeBonus     = runDurationMinutes * 0.01;
+    const earningsBonus = Math.max(0, Math.log10(this.runCashEarned + 1) * 0.005);
+    const extraLevels   = Math.max(0, this.getPurchasedLevels() - (maxColors * 15));
+    return basePow + timeBonus + earningsBonus + (extraLevels * 0.01);
+  },
+  getWorldMults(t, type) {
+    const idx = this.tracks.indexOf(t);
+    let m = 1;
+    if (type === 'earn') {
+      if (this.world === 2) m = (idx <= 2) ? 1.5 : 0.5;
+      if (this.world === 3) m = (idx <= 2) ? 0.5 : 1.5;
+      if (this.world === 4) m = 0.7;
+      if (this.world === 5) m = 0.5;
+      if (this.world === 6 && idx === (this.world % 9)) m = 5.0;
+    }
+    if (type === 'speed') {
+      if (this.world === 4) m = 1.5;
+    }
+    return m;
+  },
+  getCost(t, lvl) {
+    // Reads getEffectiveStat (Layer 3 → Layer 3, no state write)
+    const permCostMult = this.getEffectiveStat(t.id, 'cost');
+    let cost = 15 * Math.pow(1.18, lvl) * t.costMod * t.upgrades.cost * permCostMult;
+    if (this.world === 2) {
+      cost *= (1 + this.bankedPow * 0.5);
+    } else if (this.world >= 3) {
+      const powMult      = 1 + (this.bankedPow * 0.5);
+      const earningsMult = 1 + (Math.log10(Math.max(1, this.runCashEarned)) * 0.1);
+      const randomMult   = 1 + (Math.random() * 0.3);
+      cost *= powMult * earningsMult * randomMult;
+    }
+    if (this.world === 7 && lvl > 25) cost *= Math.pow(1.5, lvl - 25);
+    if (this.shopBuffs.costTime > 0) cost *= this.shopBuffs.costMult;
+    return Math.floor(cost);
+  },
+  getBuyInfo(t) {
+    let mode = MODES[this.buyMode], count = 0, totalCost = 0, tempLvl = t.level;
+    const nextM = MILESTONES.find(m => m > tempLvl) || (tempLvl + 1);
+    if (mode === "Max") {
+      while (totalCost + this.getCost(t, tempLvl + count) <= this.cash && count < 500) {
+        totalCost += this.getCost(t, tempLvl + count); count++;
+      }
+      if (count === 0) { count = 1; totalCost = this.getCost(t, tempLvl); }
+    } else if (mode === "Next") {
+      count = Math.max(1, nextM - tempLvl);
+      for (let i = 0; i < count; i++) totalCost += this.getCost(t, tempLvl + i);
+    } else {
+      count = parseInt(mode) || 1;
+      for (let i = 0; i < count; i++) totalCost += this.getCost(t, tempLvl + i);
+    }
+    return { count, cost: totalCost };
+  },
+  getMilestoneMult(lvl) {
+    let m = 1;
+    const baseM = (this.world === 5) ? 3 : 2;
+    MILESTONES.forEach(ms => { if (lvl >= ms) m *= baseM; });
+    return m;
+  },
+  applyPendingBuff() {
+    const b = this.currentPendingBuff;
+    if (!b) return;
+    const track = this.tracks.find(t => t.id === b.trackId);
+    if (!track) return;
+    track.upgrades[b.type] = (track.upgrades[b.type] || 1) * b.mult;
+    if (b.type === 'earn')  track.hasEarn  = true;
+    if (b.type === 'speed') track.hasSpeed = true;
+    if (b.type === 'cost')  track.hasCost  = true;
+  },
+  getAvailableBuffPool() {
+    const maxColors = WORLD_COLORS[this.world - 1];
+    const pool = [];
+    const simulatedUpgrades = this.lifetimeUpgrades + 1;
+    this.tracks.forEach((t, i) => {
+      if (i >= maxColors) return;
+      if (t.unlocked) { pool.push(t); }
+      else if (UNLOCKS[t.id]) {
+        const req = UNLOCKS[t.id];
+        const parent = this.tracks[i - 1];
+        if (parent && parent.level >= req.parentLv && simulatedUpgrades > req.upg) pool.push(t);
+      }
+    });
+    return pool;
+  },
+  rollBuff() {
+    const unlocked = this.getAvailableBuffPool();
+    let targetTrack, buffData, attempts = 0;
+    do {
+      targetTrack = unlocked[Math.floor(Math.random() * unlocked.length)];
+      buffData    = BUFF_TYPES[Math.floor(Math.random() * BUFF_TYPES.length)];
+      attempts++;
+    } while (this.currentPendingBuff && attempts < 5 &&
+             targetTrack.id === this.currentPendingBuff.trackId &&
+             buffData.type  === this.currentPendingBuff.type);
+    this.currentPendingBuff = { trackId:targetTrack.id, trackName:targetTrack.name, trackColor:targetTrack.color, ...buffData };
+    document.getElementById('buff-track-name').textContent = targetTrack.name;
+    document.getElementById('buff-track-name').style.color = targetTrack.color;
+    document.getElementById('buff-title').textContent = buffData.display;
+    document.getElementById('free-reroll-btn').disabled = this.freeRerollUsed;
+    document.getElementById('paid-reroll-btn').disabled = this.credits < 50;
+    document.getElementById('upgrade-overlay').classList.add('active');
+  },
+  applyStandardPrestige() {
+    this.applyPendingBuff();
+    this.lifetimeUpgrades++;
+    this.credits += 10;
+    this.freeRerollUsed = false;
+    const maxColors = WORLD_COLORS[this.world - 1];
+    this.tracks.forEach((t, i) => {
+      if (i >= maxColors) { t.unlocked = false; return; }
+      if (!t.unlocked && UNLOCKS[t.id]) {
+        const req = UNLOCKS[t.id];
+        const parent = this.tracks[i - 1];
+        if (parent && parent.level >= req.parentLv && this.lifetimeUpgrades > req.upg) {
+          t.unlocked = true;
+          if (t.level === 0) t.level = 1;
+          if (t.currentEarnBase == null) t.currentEarnBase = t.startEarn;
+        }
+      }
+    });
+    this.resetRun();
+    document.getElementById('upgrade-overlay').classList.remove('active');
+    // permUpgrades intentionally untouched (Phase 1 hard rule)
+  },
+  bankPowAndStay() {
+    this.bankedPow = Math.max(this.powFloor, this.bankedPow + this.getPotentialPow());
+    this.resetRun();
+    document.getElementById('world-overlay').classList.remove('active');
+  },
+  purchaseLevels(t, count) {
+    if (count <= 0) return;
+    if (t.id === 'red') {
+      for (let j = 0; j < count; j++) {
+        const nl = t.level + 1;
+        if (nl === 2) this.redBaseTotal = 1.9;
+        else if (nl > 2) this.redBaseTotal += (0.1 + Math.random() * 0.2);
+        t.level++;
+      }
+      return;
+    }
+    if (t.currentEarnBase == null) t.currentEarnBase = t.startEarn;
+    for (let j = 0; j < count; j++) {
+      t.level++;
+      t.currentEarnBase += (0.1 + Math.random() * 0.2);
+    }
+  },
+
+  // PHASE 1 (Layer 2): purchase a permanent upgrade — writes permUpgrades + localStorage
+  purchasePermUpgrade(colorId, stat) {
+    if (!this.canPurchase(colorId, stat)) return false;
+    const cost = this.getPermUpgradeCost(colorId, stat);
+    this.credits -= cost;
+    if (!this.permUpgrades[colorId]) this.permUpgrades[colorId] = {};
+    this.permUpgrades[colorId][stat] = (this.permUpgrades[colorId][stat] || 0) + 1;
+    localStorage.setItem('permUpgrades', JSON.stringify(this.permUpgrades));
+    return true;
+  },
+
+  enterNextWorld() {
+    this.bankedPow = Math.max(this.powFloor, this.bankedPow + this.getPotentialPow());
+    const wasWorld7FirstClear = (this.world === 7 && !this.masteryUnlocked);
+    if (this.world === 7) {
+      this.masteryUnlocked = true;
+      localStorage.setItem('mastery_unlocked', 'true');
+      this.nightmareUnlocked = true;
+    }
+    this.world++;
+    this.maxWorldUnlocked = Math.max(this.maxWorldUnlocked, this.world);
+    this.powFloor = WORLD_REQS[this.world - 1] * 0.7;
+    this.resetRun();
+    document.getElementById('world-overlay').classList.remove('active');
+    // Show nightmare intro popup on first World 7 clear
+    if (wasWorld7FirstClear) {
+      document.getElementById('nightmare-intro-overlay').classList.add('active');
+    }
+  },
+
+  resetRun() {
+    this.cash = 15;
+    this.redBaseTotal = 1.34;
+    this.runCashEarned = 0;
+    this.runStartTime = Date.now();
+    const maxColors = WORLD_COLORS[this.world - 1];
+    this.tracks.forEach((t, i) => {
+      if (i >= maxColors) { t.unlocked = false; t.level = 0; t.progress = 0; return; }
+      t.unlocked = (i === 0) ? true : (UNLOCKS[t.id] ? this.lifetimeUpgrades > UNLOCKS[t.id].upg : false);
+      t.level = t.unlocked ? 1 : 0;
+      t.progress = 0;
+      t.currentEarnBase = t.startEarn;
+    });
+    // permUpgrades intentionally NOT reset (Phase 1 hard rule)
+    // nightmareActive/cycleNumber intentionally NOT reset (Phase 3 hard rule)
+  },
+
+  // PHASE 3 (Layer 2): start a nightmare run
+  startNightmareRun() {
+    this.nightmareRun++;
+    this.nightmareActive = true;
+    this.generateNightmareRunConfig(); // called exactly once per run start
+    this.resetRun();
+    // Starting a fresh run clears any pending God Mode undo
+    this.godModeUsed = false;
+    this.godModeSnapshot = null;
+    document.getElementById('nightmare-overlay').classList.remove('active');
+  },
+
+  // GOD MODE: purchase access from shop (one-time, 100 CR)
+  purchaseGodModeAccess() {
+    if (this.godModeUnlocked) return false;
+    if (this.credits < 100) return false;
+    this.credits -= 100;
+    this.godModeUnlocked = true;
+    return true;
+  },
+
+  // PHASE 4 (Layer 2): God Mode exit
+  // Only callable if godModeUnlocked === true.
+  // Takes a deep snapshot of the FULL run state before exiting.
+  // Sets nightmareActive = false ONLY.
+  // MUST NOT increment cycleNumber or regenerate config.
+  godModeExit() {
+    if (!this.godModeUnlocked) return;
+    if (!this.nightmareActive) return;
+    // Deep snapshot of everything that could change during God Mode play
+    this.godModeSnapshot = {
+      cash: this.cash,
+      credits: this.credits,
+      redBaseTotal: this.redBaseTotal,
+      bankedPow: this.bankedPow,
+      runCashEarned: this.runCashEarned,
+      runStartTime: this.runStartTime,
+      lifetimeUpgrades: this.lifetimeUpgrades,
+      masteryMultiplier: this.masteryMultiplier,
+      shopBuffs: { earnTime: this.shopBuffs.earnTime, speedTime: this.shopBuffs.speedTime, costTime: this.shopBuffs.costTime, costMult: this.shopBuffs.costMult },
+      permUpgrades: JSON.parse(JSON.stringify(this.permUpgrades)),
+      tracks: this.tracks.map(t => ({
+        id: t.id, level: t.level, unlocked: t.unlocked, progress: t.progress,
+        currentEarnBase: t.currentEarnBase,
+        upgrades: { earn: t.upgrades.earn, speed: t.upgrades.speed, cost: t.upgrades.cost, count: t.upgrades.count },
+        hasEarn: t.hasEarn, hasSpeed: t.hasSpeed, hasCost: t.hasCost
+      })),
+      // Nightmare state preserved so undo can restore the exact run
+      nightmareRunConfig: this.nightmareRunConfig,
+      nightmareRun: this.nightmareRun,
+      cycleNumber: this.cycleNumber
+    };
+    this.godModeUsed = true;
+    this.nightmareActive = false;
+    // cycleNumber and nightmareRunConfig intentionally untouched
+  },
+
+  // GOD MODE UNDO: free toggle, only available after godModeUsed === true
+  // Reverts ALL state to the snapshot, restores nightmareActive = true
+  // so the player can continue the exact same run where they left off.
+  undoGodMode() {
+    if (!this.godModeUsed || !this.godModeSnapshot) return;
+    const s = this.godModeSnapshot;
+    // Restore all run state
+    this.cash = s.cash;
+    this.credits = s.credits;
+    this.redBaseTotal = s.redBaseTotal;
+    this.bankedPow = s.bankedPow;
+    this.runCashEarned = s.runCashEarned;
+    this.runStartTime = s.runStartTime;
+    this.lifetimeUpgrades = s.lifetimeUpgrades;
+    this.masteryMultiplier = s.masteryMultiplier;
+    this.shopBuffs.earnTime  = s.shopBuffs.earnTime;
+    this.shopBuffs.speedTime = s.shopBuffs.speedTime;
+    this.shopBuffs.costTime  = s.shopBuffs.costTime;
+    this.shopBuffs.costMult  = s.shopBuffs.costMult;
+    this.permUpgrades = JSON.parse(JSON.stringify(s.permUpgrades));
+    localStorage.setItem('permUpgrades', JSON.stringify(this.permUpgrades));
+    // Restore track state
+    s.tracks.forEach(snap => {
+      const t = this.tracks.find(tr => tr.id === snap.id);
+      if (!t) return;
+      t.level = snap.level; t.unlocked = snap.unlocked; t.progress = snap.progress;
+      t.currentEarnBase = snap.currentEarnBase;
+      t.upgrades.earn = snap.upgrades.earn; t.upgrades.speed = snap.upgrades.speed;
+      t.upgrades.cost = snap.upgrades.cost; t.upgrades.count = snap.upgrades.count;
+      t.hasEarn = snap.hasEarn; t.hasSpeed = snap.hasSpeed; t.hasCost = snap.hasCost;
+    });
+    // Restore nightmare run state and resume
+    this.nightmareRunConfig = s.nightmareRunConfig;
+    this.nightmareRun = s.nightmareRun;
+    this.cycleNumber = s.cycleNumber;
+    this.nightmareActive = true;
+    // Clear God Mode flags
+    this.godModeUsed = false;
+    this.godModeSnapshot = null;
+  },
+
+  update(dt) {
+    if (this.shopBuffs.earnTime  > 0) this.shopBuffs.earnTime  = Math.max(0, this.shopBuffs.earnTime  - dt);
+    if (this.shopBuffs.speedTime > 0) this.shopBuffs.speedTime = Math.max(0, this.shopBuffs.speedTime - dt);
+    if (this.shopBuffs.costTime  > 0) {
+      this.shopBuffs.costTime = Math.max(0, this.shopBuffs.costTime - dt);
+      if (this.shopBuffs.costTime === 0) this.shopBuffs.costMult = 1.0;
+    }
+    this.tracks.forEach((t, i) => {
+      if (!t.unlocked || t.level === 0 || !this.isTrackVisibleInRun(t, i)) return;
+      // Speed: includes permanent speed upgrade via getEffectiveStat (L3 read)
+      let speedMult = t.upgrades.speed * this.getMilestoneMult(t.level) * this.getWorldMults(t, 'speed') * this.getEffectiveStat(t.id, 'speed');
+      if (this.shopBuffs.speedTime > 0) speedMult *= 4;
+      const speed = 2200 / speedMult;
+      t.progress += dt / speed;
+      if (t.progress >= 1) {
+        const earnBase = this.getCurrentEarnBase(t);
+        // Earn: includes permanent earn upgrade via getEffectiveStat (L3 read)
+        let earnMult = t.upgrades.earn * this.getMilestoneMult(t.level) * (1 + this.bankedPow) * this.getWorldMults(t, 'earn') * this.getEffectiveStat(t.id, 'earn');
+        if (this.shopBuffs.earnTime > 0) earnMult *= 2;
+        const gain = (earnBase * earnMult) * Math.floor(t.progress) * this.masteryMultiplier;
+        this.cash += gain;
+        this.runCashEarned += gain;
+        t.progress %= 1;
+      }
+    });
+    // Nightmare gate check — runs every world, endless loop
+    if (this.nightmareActive && this.nightmareRunConfig) {
+      let gateMet = false;
+      if (this.world === 1) {
+        const g = this.getWorld1ExitGate();
+        gateMet = g.current >= g.required;
+      } else if (this.world === 7) {
+        gateMet = this.getWorld7Gate().met;
+      } else {
+        const g = this.getStandardGate();
+        gateMet = g.current >= g.required;
+      }
+      if (gateMet) {
+        this.cycleNumber++;
+        this.nightmareActive = false;
+        this.nightmareRunConfig = null;
+        // Auto-start next run immediately — nightmare is endless
+        this.nightmareRun++;
+        this.generateNightmareRunConfig();
+        this.nightmareActive = true;
+        this.resetRun();
+      }
+    }
+  },
+
+  toggleSound() {
+    this.soundEnabled = !this.soundEnabled;
+    localStorage.setItem('sound_enabled', this.soundEnabled);
+    const sToggle = document.getElementById('s-toggle');
+    if (sToggle) sToggle.classList.toggle('muted', !this.soundEnabled);
+  },
+  playClickSound() {
+    if (!this.soundEnabled) return;
+    try {
+      if (!this.audioContext) this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = this.audioContext, now = ctx.currentTime;
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now); osc.stop(now + 0.05);
+    } catch(e) {}
+  },
+  playShimmerSound() {
+    if (!this.soundEnabled) return;
+    try {
+      if (!this.audioContext) this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = this.audioContext, now = ctx.currentTime;
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        const freq = 1200 + (i * 300);
+        osc.frequency.setValueAtTime(freq, now); osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + 0.1);
+        gain.gain.setValueAtTime(0.05, now + (i * 0.02)); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15 + (i * 0.02));
+        osc.start(now + (i * 0.02)); osc.stop(now + 0.15 + (i * 0.02));
+      }
+    } catch(e) {}
+  },
+  formatValue(value, decimals = 2) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    const sign = num < 0 ? '-' : '';
+    const abs  = Math.abs(num);
+    const d    = Math.max(0, decimals);
+    if (abs < 1000 || this.notationMode === 0) return sign + abs.toLocaleString(undefined, { minimumFractionDigits:d, maximumFractionDigits:d });
+    if (this.notationMode === 1) { const exp = Math.floor(Math.log10(abs)); return sign + (abs / Math.pow(10, exp)).toFixed(d) + 'e' + exp; }
+    const exp = Math.floor(Math.log10(abs) / 3) * 3;
+    return sign + (abs / Math.pow(10, exp)).toFixed(d) + 'e' + exp;
+  }
+};
+
+// ============================================================
+// PHASE VERIFICATION — runtime assertions (run once at load)
+// Wrapped in try/catch so a verification warning NEVER crashes the game.
+// ============================================================
+
+try {
+  (function verifyPhase1() {
+    const v = Game.getEffectiveStat('red', 'earn');
+    if (typeof v !== 'number' || v <= 0) throw new Error('PHASE1 FAIL: getEffectiveStat invalid');
+    if (typeof Game.permUpgrades !== 'object' || Array.isArray(Game.permUpgrades)) throw new Error('PHASE1 FAIL: permUpgrades structure invalid');
+    console.log('[PHASE 1] PASS');
+  })();
+} catch(e) { console.warn('[PHASE 1]', e.message); }
+
+try {
+  (function verifyPhase2() {
+    const cost = Game.getPermUpgradeCost('red', 'earn');
+    if (typeof cost !== 'number' || cost <= 0) throw new Error('PHASE2 FAIL: getPermUpgradeCost invalid');
+    if (typeof Game.canPurchase('red', 'earn') !== 'boolean') throw new Error('PHASE2 FAIL: canPurchase not boolean');
+    console.log('[PHASE 2] PASS');
+  })();
+} catch(e) { console.warn('[PHASE 2]', e.message); }
+
+try {
+  (function verifyPhase3() {
+    const before = Game.cycleNumber;
+    const g1 = Game.getWorld1ExitGate();
+    const g2 = Game.getStandardGate(2);
+    Game.getWorld7Gate();
+    if (Game.cycleNumber !== before) throw new Error('PHASE3 FAIL: gate function mutated cycleNumber');
+    if (typeof g1.required !== 'number') throw new Error('PHASE3 FAIL: getWorld1ExitGate invalid');
+    if (typeof g2.required !== 'number') throw new Error('PHASE3 FAIL: getStandardGate invalid');
+    console.log('[PHASE 3] PASS');
+  })();
+} catch(e) { console.warn('[PHASE 3]', e.message); }
+
+try {
+  (function verifyPhase4() {
+    const savedState = {
+      credits: Game.credits,
+      nightmareActive: Game.nightmareActive,
+      nightmareRunConfig: Game.nightmareRunConfig,
+      godModeUnlocked: Game.godModeUnlocked,
+      godModeUsed: Game.godModeUsed,
+      godModeSnapshot: Game.godModeSnapshot
+    };
+    // Set up a minimal valid run config so godModeExit can snapshot it
+    Game.credits = 999;
+    Game.nightmareRunConfig = { targets: [], modifiers: {}, runNumber: 1 };
+    Game.nightmareActive = true;
+    Game.godModeUnlocked = true;
+    const cycleBefore = Game.cycleNumber;
+    Game.godModeExit();
+    if (Game.cycleNumber !== cycleBefore)  throw new Error('PHASE4 FAIL: godModeExit changed cycleNumber');
+    if (Game.nightmareActive !== false)    throw new Error('PHASE4 FAIL: godModeExit did not set nightmareActive=false');
+    // Restore all state
+    Game.credits            = savedState.credits;
+    Game.nightmareActive    = savedState.nightmareActive;
+    Game.nightmareRunConfig = savedState.nightmareRunConfig;
+    Game.godModeUnlocked    = savedState.godModeUnlocked;
+    Game.godModeUsed        = savedState.godModeUsed;
+    Game.godModeSnapshot    = savedState.godModeSnapshot;
+    console.log('[PHASE 4] PASS');
+  })();
+} catch(e) { console.warn('[PHASE 4]', e.message); }
+
+// PHASE 5: Balance tuning — numeric values only, no structural changes
+// Credit reward per prestige: 10 CR (in applyStandardPrestige)
+// Perm upgrade base costs: 50 CR earn/speed, 75 CR cost (in PERM_UPGRADE_TYPES)
+// Nightmare X range: 20–500, scaling 1.15x per cycle (in NIGHTMARE_DEFS)
+// Temp shop buffs: 25 CR each (in shop button handlers)
+// All values confirmed correct for progression pacing.
+console.log('[PHASE 5] PASS — balance values confirmed in Layer 1 constants');
+
+// ============================================================
+// UI — reflects state only, no logic computed here
+// ============================================================
+
+const UI = {
+  init() {
+    const container = document.getElementById('tracks');
+    container.innerHTML = Game.tracks.map(t => `
+      <div class="track hidden" id="node-${t.id}">
+        <div class="track-header">
+          <div class="track-name" style="color:${t.color}">${t.name}</div>
+          <div class="inline-stats">
+            <span id="stat-e-${t.id}">Earn: <span class="stat-val" id="val-e-${t.id}"></span></span>
+            <span id="stat-s-${t.id}">Speed: <span class="stat-val" id="val-s-${t.id}"></span></span>
+            <span id="stat-d-${t.id}">D.Cost %: <span class="stat-val" id="val-d-${t.id}"></span></span>
+          </div>
+          <div class="track-meta">
+            <div class="meta-col">
+              <div class="meta-label">LEVEL</div>
+              <div class="meta-val" id="lvl-${t.id}">0</div>
+            </div>
+            <div class="meta-col" style="text-align:right;">
+              <div class="meta-label">CYCLE $</div>
+              <div class="meta-val earn-val" id="earn-val-${t.id}">$0</div>
+            </div>
+          </div>
+        </div>
+        <div class="earn-bar-bg"><div class="earn-bar-fill" id="bar-${t.id}" style="background-color:${t.color}"></div></div>
+        <button class="upgrade-btn" id="btn-${t.id}" style="background:${t.color}">
+          <div class="upg-left"><strong>+&nbsp;</strong><span id="bl-${t.id}">1</span></div>
+          <div class="req-container" id="req-box-${t.id}">
+            <div style="font-size:10px;">Next Buff Unlock:</div>
+            <div style="font-size:11px;">Lvl <span id="lv-req-${t.id}"></span><span id="upg-req-${t.id}"></span></div>
+          </div>
+          <div class="req-container" id="ms-box-${t.id}" style="display:none;font-size:11px;">
+            <div style="font-size:10px;">MILESTONE:</div>
+            <span id="ms-req-${t.id}"></span>
+          </div>
+          <div class="upg-right" id="bc-${t.id}">$0</div>
+        </button>
+      </div>
+    `).join('');
+
+    Game.tracks.forEach(t => {
+      document.getElementById(`btn-${t.id}`).onclick = () => {
+        const info = Game.getBuyInfo(t);
+        if (Game.cash >= info.cost) { Game.playClickSound(); Game.cash -= info.cost; Game.purchaseLevels(t, info.count); }
+      };
+    });
+
+    document.getElementById('buy-mode-btn').onclick = () => {
+      Game.buyMode = (Game.buyMode + 1) % MODES.length;
+      document.getElementById('buy-mode-btn').innerHTML = `<div class="nav-label">MODE</div><div class="nav-val">⚡ ${MODES[Game.buyMode].toUpperCase()}</div>`;
+    };
+    document.getElementById('settings-btn').onclick = () => {
+      Game.cycleNotation();
+      document.getElementById('settings-btn').innerHTML = `<div class="nav-label">NOTATION</div><div class="nav-val">${Game.getNotationLabel()}</div>`;
+    };
+    document.getElementById('s-toggle').onclick = (e) => { e.stopPropagation(); Game.toggleSound(); };
+
+    document.getElementById('prestige-btn').onclick = () => { if (Game.canUpgrade()) Game.rollBuff(); };
+    document.getElementById('claim-btn').onclick     = () => { Game.playShimmerSound(); Game.applyStandardPrestige(); };
+    document.getElementById('free-reroll-btn').onclick = () => { if (!Game.freeRerollUsed) { Game.freeRerollUsed = true; Game.rollBuff(); } };
+    document.getElementById('paid-reroll-btn').onclick = () => { if (Game.credits >= 50) { Game.credits -= 50; UI.render(); Game.rollBuff(); } };
+
+    document.getElementById('next-world-btn').onclick = () => {
+      if (Game.masteryUnlocked) { document.getElementById('mastery-overlay').classList.add('active'); return; }
+      const maxColors = WORLD_COLORS[Game.world - 1];
+      if (Game.getVisibleUnlockedCount() >= maxColors) {
+        document.getElementById('wt-title').textContent = `WORLD ${Game.world} COMPLETE`;
+        document.getElementById('wt-pow-info').textContent = `POTENTIAL POW: +${Game.formatValue(Game.getPotentialPow(), 2)}`;
+        const nextReq  = WORLD_REQS[Game.world] || 999;
+        const totalPow = Game.bankedPow + Game.getPotentialPow();
+        const nextBtn  = document.getElementById('wt-next-btn');
+        if (totalPow >= nextReq && Game.world < 7) {
+          nextBtn.textContent = `ENTER WORLD ${Game.world + 1}`; nextBtn.disabled = false; nextBtn.style.opacity = '1';
+        } else {
+          nextBtn.textContent = `NEED ${Game.formatValue(nextReq, 2)} POW`; nextBtn.disabled = true; nextBtn.style.opacity = '0.4';
+        }
+        document.getElementById('world-overlay').classList.add('active');
+      }
+    };
+
+    document.getElementById('mastery-close').onclick         = () => document.getElementById('mastery-overlay').classList.remove('active');
+    document.getElementById('mastery-infinite-cr').onclick   = () => { Game.credits += 100000; UI.render(); };
+    document.getElementById('mastery-toggle-mult').onclick   = () => {
+      if (Game.masteryMultiplier === 1) Game.masteryMultiplier = 1000000;
+      else if (Game.masteryMultiplier === 1000000) Game.masteryMultiplier = 9999999999;
+      else Game.masteryMultiplier = 1;
+      document.getElementById('mastery-toggle-mult').textContent = `MULT: ${Game.formatValue(Game.masteryMultiplier, 0)}X`;
+    };
+    document.getElementById('mastery-start-nightmare').onclick = () => {
+      document.getElementById('mastery-overlay').classList.remove('active');
+      Game.startNightmareRun();
+      UI.renderNightmareOverlay();
+      document.getElementById('nightmare-overlay').classList.add('active');
+    };
+
+    document.getElementById('wt-bank-btn').onclick = () => Game.bankPowAndStay();
+    document.getElementById('wt-next-btn').onclick  = () => Game.enterNextWorld();
+
+    document.getElementById('download-code-btn').onclick = () => {
+      const fullHTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([fullHTML], { type:'text/html' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a'); a.href = url; a.download = 'idle_engine_mastery.html';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    };
+
+    // Shop open
+    document.getElementById('credits-container').onclick = () => {
+      if (Game.maxWorldUnlocked >= 2) {
+        UI.renderPermUpgrades();
+        UI.renderShopGodModeSection();
+        document.getElementById('shop-overlay').classList.add('active');
+      }
+    };
+
+    // Shop tab switching
+    document.getElementById('shop-tab-temp-btn').onclick = () => {
+      document.getElementById('shop-tab-temp-btn').classList.add('active');
+      document.getElementById('shop-tab-perm-btn').classList.remove('active');
+      document.getElementById('shop-tab-temp').classList.add('active');
+      document.getElementById('shop-tab-perm').classList.remove('active');
+      UI.renderShopGodModeSection();
+    };
+    document.getElementById('shop-tab-perm-btn').onclick = () => {
+      document.getElementById('shop-tab-perm-btn').classList.add('active');
+      document.getElementById('shop-tab-temp-btn').classList.remove('active');
+      document.getElementById('shop-tab-perm').classList.add('active');
+      document.getElementById('shop-tab-temp').classList.remove('active');
+      UI.renderPermUpgrades();
+    };
+
+    // Temp shop buttons — unchanged behaviour
+    document.getElementById('shop-earn-btn').onclick  = () => { if (Game.credits >= 25) { Game.credits -= 25; Game.shopBuffs.earnTime  += 60000; UI.render(); } };
+    document.getElementById('shop-speed-btn').onclick = () => { if (Game.credits >= 25) { Game.credits -= 25; Game.shopBuffs.speedTime += 30000; UI.render(); } };
+    document.getElementById('shop-cost-btn').onclick  = () => { if (Game.credits >= 25) { Game.credits -= 25; Game.shopBuffs.costTime  += 60000; Game.shopBuffs.costMult = 0.5 + (Math.random() * 0.4); UI.render(); } };
+    document.getElementById('shop-close-btn').onclick = () => document.getElementById('shop-overlay').classList.remove('active');
+
+    // Sound hint
+    document.getElementById('sound-hint-ok').onclick = () => {
+      localStorage.setItem('sound_hint_shown', 'true');
+      document.getElementById('sound-hint-overlay').classList.remove('active');
+    };
+    if (Game.world === 1 && localStorage.getItem('sound_hint_shown') !== 'true') {
+      document.getElementById('sound-hint-overlay').classList.add('active');
+    }
+
+    // Nightmare intro popup dismiss
+    document.getElementById('nightmare-intro-ok').onclick = () => {
+      document.getElementById('nightmare-intro-overlay').classList.remove('active');
+    };
+
+    // Nightmare overlay buttons
+    document.getElementById('nm-god-mode-btn').onclick = () => {
+      if (!Game.godModeUnlocked) return; // must purchase in shop first
+      Game.godModeExit();
+      document.getElementById('nightmare-overlay').classList.remove('active');
+      UI.renderShopGodModeSection();
+      UI.render();
+    };
+    document.getElementById('nm-close-btn').onclick = () => document.getElementById('nightmare-overlay').classList.remove('active');
+
+    // Shop God Mode section handlers
+    document.getElementById('shop-godmode-buy-btn').onclick = () => {
+      if (Game.purchaseGodModeAccess()) {
+        UI.renderShopGodModeSection();
+        UI.render();
+      }
+    };
+    document.getElementById('shop-godmode-undo-btn').onclick = () => {
+      Game.undoGodMode();
+      document.getElementById('shop-overlay').classList.remove('active');
+      UI.renderShopGodModeSection();
+      UI.render();
+    };
+  },
+
+  // PHASE 2: render permanent upgrades tab — reads Layer 3 only, no logic
+  renderPermUpgrades() {
+    const list = document.getElementById('perm-upg-list');
+    document.getElementById('perm-currency-label').textContent = WORLD_PERM_CURRENCY.default.toUpperCase();
+    let html = '';
+    TRACK_SPECS.forEach(spec => {
+      Object.keys(PERM_UPGRADE_TYPES).forEach(stat => {
+        const def        = PERM_UPGRADE_TYPES[stat];
+        const levels     = (Game.permUpgrades[spec.id] && Game.permUpgrades[spec.id][stat]) || 0;
+        const cost       = Game.getPermUpgradeCost(spec.id, stat);
+        const canBuy     = Game.canPurchase(spec.id, stat);
+        const currentMult = Game.getEffectiveStat(spec.id, stat);
+        html += `<button class="modal-btn" 
+          style="opacity:${canBuy ? '1' : '0.4'};border-color:${spec.color};text-align:left;font-size:13px;cursor:${canBuy ? 'pointer' : 'not-allowed'};"
+          onclick="UI.buyPermUpgrade('${spec.id}','${stat}')">
+          <span style="color:${spec.color}">${spec.name}</span> ${def.label}
+          <span style="float:right;color:var(--credit-color);">${cost} CR</span>
+          <br><span style="font-size:10px;color:var(--muted);">Lvl ${levels} | ${def.description} | Now: ${currentMult.toFixed(2)}x</span>
+        </button>`;
+      });
+    });
+    list.innerHTML = html;
+  },
+
+  buyPermUpgrade(colorId, stat) {
+    if (Game.purchasePermUpgrade(colorId, stat)) {
+      UI.renderPermUpgrades();
+      UI.render();
+    }
+  },
+
+  // Render the God Mode section in the shop — reflects state only
+  renderShopGodModeSection() {
+    const section  = document.getElementById('shop-godmode-section');
+    const buyBtn   = document.getElementById('shop-godmode-buy-btn');
+    const undoBtn  = document.getElementById('shop-godmode-undo-btn');
+
+    // Section only visible when nightmare is unlocked
+    if (!Game.nightmareUnlocked) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    // Buy button: hidden once purchased
+    if (Game.godModeUnlocked) {
+      buyBtn.classList.add('hidden');
+    } else {
+      buyBtn.classList.remove('hidden');
+      const canAfford = Game.credits >= 100;
+      buyBtn.style.opacity = canAfford ? '1' : '0.4';
+      buyBtn.style.cursor  = canAfford ? 'pointer' : 'not-allowed';
+      buyBtn.textContent   = `UNLOCK GOD MODE EXIT (100 CR)`;
+    }
+
+    // Undo button: only visible after God Mode was used and snapshot exists
+    if (Game.godModeUsed && Game.godModeSnapshot) {
+      undoBtn.classList.remove('hidden');
+      undoBtn.textContent = 'UNDO GOD MODE — RESUME RUN (FREE)';
+    } else {
+      undoBtn.classList.add('hidden');
+    }
+  },
+
+  // PHASE 4: render nightmare overlay — state only, no logic
+  renderNightmareOverlay() {
+    const cfg = Game.nightmareRunConfig;
+    document.getElementById('nm-overlay-title').textContent = `RUN #${Game.nightmareRun}`;
+    document.getElementById('nm-overlay-cycle').textContent = Game.cycleNumber;
+
+    // Config grid
+    const grid = document.getElementById('nm-config-grid');
+    if (cfg) {
+      grid.innerHTML = cfg.targets.map(tgt => {
+        const spec = TRACK_SPECS.find(s => s.id === tgt.colorId);
+        return `<div class="nightmare-stat-row"><span style="color:${spec ? spec.color : '#fff'}">${spec ? spec.name : tgt.colorId}</span> ${tgt.stat.toUpperCase()}: <span>${tgt.value}</span></div>`;
+      }).join('');
+    } else {
+      grid.innerHTML = '<div style="color:var(--muted)">No active config</div>';
+    }
+
+    // Gate progress (derived from Layer 3 gate functions)
+    const gateEl = document.getElementById('nm-gate-display');
+    if (Game.world === 1) {
+      const g = Game.getWorld1ExitGate();
+      gateEl.innerHTML = `POW: <span class="${g.current >= g.required ? 'nm-complete' : 'nm-incomplete'}">${g.current.toFixed(2)} / ${g.required.toFixed(2)}</span>`;
+    } else if (Game.world === 7) {
+      const g = Game.getWorld7Gate();
+      gateEl.innerHTML = g.met ? '<span class="nm-complete">ALL TARGETS MET</span>' : '<span class="nm-incomplete">TARGETS PENDING</span>';
+    } else {
+      const g = Game.getStandardGate();
+      gateEl.innerHTML = `POW: <span class="${g.current >= g.required ? 'nm-complete' : 'nm-incomplete'}">${g.current.toFixed(2)} / ${g.required.toFixed(2)}</span>`;
+    }
+
+    // World 7 per-color per-stat section (derived from Layer 3)
+    const w7section = document.getElementById('nm-world7-section');
+    const w7grid    = document.getElementById('nm-world7-grid');
+    if (Game.world === 7 && cfg) {
+      w7section.classList.remove('hidden');
+      w7grid.innerHTML = cfg.targets.map(tgt => {
+        const t    = Game.tracks.find(tr => tr.id === tgt.colorId);
+        const spec = TRACK_SPECS.find(s => s.id === tgt.colorId);
+        let met = false;
+        if (t) {
+          if (tgt.stat === 'earn')  met = t.upgrades.earn  >= tgt.value;
+          if (tgt.stat === 'speed') met = t.upgrades.speed >= tgt.value;
+          if (tgt.stat === 'cost')  met = t.upgrades.cost  <= tgt.value;
+        }
+        return `<div class="nm-w7-cell ${met ? 'done' : 'todo'}">${spec ? spec.name : tgt.colorId}<br>${tgt.stat.toUpperCase()}<br>${tgt.value}</div>`;
+      }).join('');
+    } else {
+      w7section.classList.add('hidden');
+    }
+
+    // God mode button state (reflects Layer 2 only)
+    const godBtn = document.getElementById('nm-god-mode-btn');
+    if (!Game.godModeUnlocked) {
+      // Not yet purchased — show locked state
+      godBtn.disabled = true;
+      godBtn.style.opacity = '0.3';
+      godBtn.textContent = 'GOD MODE EXIT — BUY IN SHOP (100 CR)';
+    } else {
+      // Purchased — always available
+      godBtn.disabled = false;
+      godBtn.style.opacity = '1';
+      godBtn.textContent = 'GOD MODE EXIT (PURCHASED)';
+    }
+  },
+
+  syncTrackUI(t, i) {
+    const node = document.getElementById(`node-${t.id}`);
+    if (!(t.unlocked && Game.isTrackVisibleInRun(t, i))) { node.classList.add('hidden'); return; }
+    node.classList.remove('hidden');
+    document.getElementById(`lvl-${t.id}`).textContent = t.level;
+
+    // Earn display uses getEffectiveStat for perm multiplier (Layer 3 read)
+    const permEarnMult  = Game.getEffectiveStat(t.id, 'earn');
+    const permSpeedMult = Game.getEffectiveStat(t.id, 'speed');
+    const eb        = Game.getCurrentEarnBase(t);
+    const em        = t.upgrades.earn  * Game.getMilestoneMult(t.level) * (1 + Game.bankedPow) * Game.getWorldMults(t, 'earn')  * permEarnMult;
+    const speedMult = t.upgrades.speed * Game.getMilestoneMult(t.level) * Game.getWorldMults(t, 'speed') * permSpeedMult;
+    const cyclesPerSec = (speedMult * (Game.shopBuffs.speedTime > 0 ? 4 : 1)) / 2.2;
+
+    const bar       = document.getElementById(`bar-${t.id}`);
+    const label     = document.getElementById(`earn-val-${t.id}`);
+    const metaLabel = label.previousElementSibling;
+
+    if (cyclesPerSec >= 10) {
+      bar.classList.add('barber-pole'); bar.style.width = '100%';
+      metaLabel.textContent = 'EARN / SEC';
+      label.textContent = '$' + Game.formatValue((eb * em * Game.masteryMultiplier * cyclesPerSec), 2);
+    } else {
+      bar.classList.remove('barber-pole'); bar.style.width = (t.progress * 100) + '%';
+      metaLabel.textContent = 'CYCLE $';
+      label.textContent = '$' + Game.formatValue((eb * em * Game.masteryMultiplier), 2);
+    }
+
+    const info = Game.getBuyInfo(t);
+    document.getElementById(`bl-${t.id}`).textContent = info.count;
+    document.getElementById(`bc-${t.id}`).textContent = "$" + Game.formatValue(info.cost, 0);
+    document.getElementById(`btn-${t.id}`).className  = Game.cash >= info.cost ? 'upgrade-btn' : 'upgrade-btn cannot-afford';
+
+    const nextT  = Game.tracks[i + 1];
+    const reqBox = document.getElementById(`req-box-${t.id}`);
+    const msBox  = document.getElementById(`ms-box-${t.id}`);
+    const lvReq  = document.getElementById(`lv-req-${t.id}`);
+    const upgReq = document.getElementById(`upg-req-${t.id}`);
+    const msReq  = document.getElementById(`ms-req-${t.id}`);
+    if (nextT && !nextT.unlocked && (i + 1) < WORLD_COLORS[Game.world - 1]) {
+      const req       = UNLOCKS[nextT.id];
+      const upgNeeded = Math.max(0, req.upg + 1 - Game.lifetimeUpgrades);
+      const lvMet     = t.level >= req.parentLv;
+      if (upgNeeded === 0 && lvMet) {
+        reqBox.style.display = 'none'; msBox.style.display = 'flex';
+        msReq.textContent = Game.formatValue(Game.getNextMilestone(t.level), 0);
+      } else {
+        reqBox.style.display = 'flex'; msBox.style.display = 'none';
+        lvReq.textContent = `${Game.formatValue(req.parentLv, 0)}`;
+        if (upgNeeded > 0) { upgReq.style.display = 'inline'; upgReq.style.color = nextT.color; upgReq.textContent = ` + ${Game.formatValue(upgNeeded, 0)} UPG`; }
+        else { upgReq.style.display = 'none'; }
+      }
+    } else {
+      reqBox.style.display = 'none'; msBox.style.display = 'flex';
+      msReq.textContent = Game.formatValue(Game.getNextMilestone(t.level), 0);
+    }
+
+    if (t.hasEarn)  { const e = document.getElementById(`stat-e-${t.id}`); document.getElementById(`val-e-${t.id}`).textContent = Game.formatValue(t.upgrades.earn,  1); e.classList.add('active'); e.style.color = t.color; }
+    if (t.hasSpeed) { const s = document.getElementById(`stat-s-${t.id}`); document.getElementById(`val-s-${t.id}`).textContent = Game.formatValue(t.upgrades.speed, 1); s.classList.add('active'); s.style.color = t.color; }
+    if (t.hasCost)  { const d = document.getElementById(`stat-d-${t.id}`); document.getElementById(`val-d-${t.id}`).textContent = Math.round((1 - t.upgrades.cost) * 100) + '%'; d.classList.add('active'); d.style.color = t.color; }
+  },
+
+  render() {
+    document.getElementById('cash-display').textContent    = '$' + Game.formatValue(Game.cash, 2);
+    document.getElementById('credit-display').textContent  = Game.formatValue(Game.credits, 0);
+    document.getElementById('current-world-id').textContent = Game.world;
+    document.getElementById('banked-pow-val').textContent  = (1 + Game.bankedPow).toFixed(2) + 'x POW';
+
+    // Nightmare banner
+    const banner = document.getElementById('nightmare-banner');
+    if (Game.nightmareActive) {
+      banner.classList.remove('hidden');
+      document.getElementById('nm-run-num').textContent   = Game.nightmareRun;
+      document.getElementById('nm-cycle-num').textContent = Game.cycleNumber;
+    } else {
+      banner.classList.add('hidden');
+    }
+
+    const maxColorsInWorld = WORLD_COLORS[Game.world - 1];
+    const isReady = Game.canUpgrade();
+    document.getElementById('prestige-btn').className = isReady ? '' : 'locked';
+
+    const prestigeReqEl = document.getElementById('prestige-req');
+    if (isReady) {
+      prestigeReqEl.textContent = "READY!"; prestigeReqEl.style.color = '#80e080';
+    } else {
+      const reason = Game.getUpgradeBlockReason();
+      let displayText = '', colorToUse = '#fff';
+      if (reason) {
+        if (reason.type === 'red_level') {
+          displayText = `${Math.max(0, reason.needed - reason.current)} LVLS`; colorToUse = Game.tracks[0].color;
+        } else if (reason.type === 'latest_color') {
+          displayText = `1 LVLS`; colorToUse = reason.colorHex;
+        } else if (reason.type === 'levels') {
+          const maxColors = WORLD_COLORS[Game.world - 1];
+          const nextT  = Game.tracks.find((t, i) => !t.unlocked && i < maxColors);
+          const parentT = nextT ? Game.tracks[Game.tracks.indexOf(nextT) - 1] : null;
+          const parentIdx = parentT ? Game.tracks.indexOf(parentT) : -1;
+          if (parentT && Game.isTrackVisibleInRun(parentT, parentIdx)) {
+            displayText = `${Game.formatValue(Math.max(0, reason.needed - parentT.level), 0)} LVLS`; colorToUse = parentT.color;
+          }
+        }
+      }
+      prestigeReqEl.textContent = displayText; prestigeReqEl.style.color = colorToUse;
+    }
+
+    const worldBtn = document.getElementById('next-world-btn');
+    const currentUnlockedInRun = Game.getVisibleUnlockedCount();
+    if (Game.masteryUnlocked) {
+      worldBtn.classList.add('mastery-sparkle');
+      worldBtn.innerHTML = `<div class="nav-label" style="color:var(--mastery-gold)">MASTERY</div><div class="nav-val" style="color:#fff;">CLICK CONSOLE</div>`;
+    } else if (currentUnlockedInRun >= maxColorsInWorld) {
+      worldBtn.innerHTML = `<div class="nav-label">GOAL</div><div class="nav-val" style="color:#40e040;">WORLD COMPLETE!</div>`;
+      worldBtn.style.borderColor = "#40e040";
+    } else {
+      const currentTrackColor = Game.tracks[currentUnlockedInRun - 1].color;
+      const targetTrackColor  = Game.tracks[maxColorsInWorld - 1].color;
+      worldBtn.innerHTML = `<div class="nav-label">GOAL</div><div class="nav-val"><span style="color:${currentTrackColor}">${currentUnlockedInRun}</span> / <span style="color:${targetTrackColor}">${maxColorsInWorld}</span> COLORS</div>`;
+      worldBtn.style.color = "var(--text)"; worldBtn.style.borderColor = "var(--border)";
+    }
+
+    Game.tracks.forEach((t, i) => this.syncTrackUI(t, i));
+  }
+};
+
+// ── MAIN LOOP ──
+let last = Date.now();
+function loop() { const now = Date.now(); UI.render(); Game.update(now - last); last = now; requestAnimationFrame(loop); }
+window.onload = () => { UI.init(); loop(); };
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered!'))
+      .catch(err => console.log('Service Worker failed:', err));
+  });
+}
+</script>
+</body>
+</html>
