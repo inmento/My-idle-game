@@ -170,6 +170,20 @@
 <!-- Save indicator -->
 <div id="save-indicator">💾 SAVED</div>
 
+<!-- OFFLINE INCOME POPUP -->
+<div id="offline-overlay" class="overlay">
+  <div class="selection-box">
+    <div style="color:var(--muted);font-size:11px;margin-bottom:5px;">WELCOME BACK</div>
+    <div class="buff-display" style="color:#fff;font-size:28px;">OFFLINE INCOME</div>
+    <div id="offline-hours-text" class="pow-summary" style="color:var(--muted);font-size:13px;margin-bottom:6px;">You were away for 0h 0m</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">EARNED WHILE AWAY:</div>
+    <div id="offline-earned-text" style="font-family:'Teko',sans-serif;font-size:36px;color:var(--cash-color);margin-bottom:20px;">$0</div>
+    <div class="modal-btns">
+      <button id="offline-ok-btn" class="modal-btn claim-btn">COLLECT &amp; CONTINUE</button>
+    </div>
+  </div>
+</div>
+
 <!-- UPGRADE OVERLAY -->
 <div id="upgrade-overlay" class="overlay">
   <div class="selection-box">
@@ -452,6 +466,16 @@ function saveGame() {
   }
 }
 
+function simulateOfflineProgress(ms) {
+  const CHUNK = 1000;
+  let remaining = ms;
+  while (remaining > 0) {
+    const step = Math.min(remaining, CHUNK);
+    Game.update(step);
+    remaining -= step;
+  }
+}
+
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -459,28 +483,14 @@ function loadGame() {
     const d = JSON.parse(raw);
     if (!d || !d.v) return false;
 
-    Game.cash             = d.cash            ?? Game.cash;
-    Game.credits          = d.credits         ?? Game.credits;
-    Game.lifetimeUpgrades = d.lifetimeUpgrades ?? Game.lifetimeUpgrades;
-    Game.buyMode          = d.buyMode          ?? Game.buyMode;
-    Game.notationMode     = d.notationMode     ?? Game.notationMode;
-    Game.redBaseTotal     = d.redBaseTotal     ?? Game.redBaseTotal;
-    Game.world            = d.world            ?? Game.world;
-    Game.maxWorldUnlocked = d.maxWorldUnlocked ?? Game.maxWorldUnlocked;
-    Game.bankedPow        = d.bankedPow        ?? Game.bankedPow;
-    Game.powFloor         = d.powFloor         ?? Game.powFloor;
-    Game.runCashEarned    = d.runCashEarned    ?? Game.runCashEarned;
-    Game.runStartTime     = d.runStartTime     ?? Game.runStartTime;
-    Game.masteryUnlocked  = d.masteryUnlocked  ?? Game.masteryUnlocked;
-    Game.masteryMultiplier = d.masteryMultiplier ?? Game.masteryMultiplier;
-    Game.freeRerollUsed   = d.freeRerollUsed   ?? Game.freeRerollUsed;
-    Game.nightmareUnlocked = d.nightmareUnlocked ?? Game.nightmareUnlocked;
-    Game.nightmareActive  = d.nightmareActive  ?? Game.nightmareActive;
-    Game.cycleNumber      = d.cycleNumber      ?? Game.cycleNumber;
-    Game.nightmareRun     = d.nightmareRun     ?? Game.nightmareRun;
-    Game.nightmareRunConfig = d.nightmareRunConfig ?? Game.nightmareRunConfig;
-    Game.godModeUnlocked  = d.godModeUnlocked  ?? Game.godModeUnlocked;
-    Game.godModeUsed      = d.godModeUsed      ?? Game.godModeUsed;
+    const GAME_KEYS = [
+      'cash','credits','lifetimeUpgrades','buyMode','notationMode','redBaseTotal',
+      'world','maxWorldUnlocked','bankedPow','powFloor','runCashEarned','runStartTime',
+      'masteryUnlocked','masteryMultiplier','freeRerollUsed',
+      'nightmareUnlocked','nightmareActive','cycleNumber','nightmareRun',
+      'nightmareRunConfig','godModeUnlocked','godModeUsed'
+    ];
+    GAME_KEYS.forEach(k => { if (d[k] !== undefined) Game[k] = d[k]; });
 
     if (d.shopBuffs) Object.assign(Game.shopBuffs, d.shopBuffs);
     if (d.permUpgrades) Game.permUpgrades = d.permUpgrades;
@@ -507,16 +517,13 @@ function loadGame() {
       const elapsed = Date.now() - d.saveTime;
       const MAX_OFFLINE_MS = 8 * 60 * 60 * 1000; // cap at 8 hours
       const offlineMs = Math.max(0, Math.min(elapsed, MAX_OFFLINE_MS));
+      const MIN_OFFLINE_MS = 60 * 1000; // only show popup if away 60+ seconds
       if (offlineMs > 0) {
-        // Advance shop-buff timers so they expire correctly offline,
-        // then run the tick in 1-second chunks to respect the existing
-        // update() logic (progress accumulation, nightmare gate checks).
-        const CHUNK = 1000;
-        let remaining = offlineMs;
-        while (remaining > 0) {
-          const step = Math.min(remaining, CHUNK);
-          Game.update(step);
-          remaining -= step;
+        const cashBefore = Game.cash;
+        simulateOfflineProgress(offlineMs);
+        if (offlineMs >= MIN_OFFLINE_MS) {
+          // Store offline results so the popup can display them after UI.init()
+          Game._offlinePopup = { earned: Game.cash - cashBefore, seconds: Math.floor(offlineMs / 1000) };
         }
       }
     }
@@ -1073,6 +1080,13 @@ const Game = {
 // ============================================================
 
 const UI = {
+  els: {},
+  cacheElements() {
+    ['cash-display','credit-display','current-world-id','banked-pow-val',
+     'nm-run-num','nm-cycle-num','prestige-btn','prestige-req','next-world-btn',
+     'nightmare-banner'].forEach(id => { this.els[id] = document.getElementById(id); });
+  },
+
   init() {
     const container = document.getElementById('tracks');
     container.innerHTML = Game.tracks.map(t => `
@@ -1193,20 +1207,17 @@ const UI = {
       }
     };
 
-    document.getElementById('shop-tab-temp-btn').onclick = () => {
-      document.getElementById('shop-tab-temp-btn').classList.add('active');
-      document.getElementById('shop-tab-perm-btn').classList.remove('active');
-      document.getElementById('shop-tab-temp').classList.add('active');
-      document.getElementById('shop-tab-perm').classList.remove('active');
-      UI.renderShopGodModeSection();
-    };
-    document.getElementById('shop-tab-perm-btn').onclick = () => {
-      document.getElementById('shop-tab-perm-btn').classList.add('active');
-      document.getElementById('shop-tab-temp-btn').classList.remove('active');
-      document.getElementById('shop-tab-perm').classList.add('active');
-      document.getElementById('shop-tab-temp').classList.remove('active');
-      UI.renderPermUpgrades();
-    };
+    [['shop-tab-temp-btn','shop-tab-temp','shop-tab-perm-btn','shop-tab-perm', () => UI.renderShopGodModeSection()],
+     ['shop-tab-perm-btn','shop-tab-perm','shop-tab-temp-btn','shop-tab-temp', () => UI.renderPermUpgrades()]
+    ].forEach(([onId, onPanel, offId, offPanel, cb]) => {
+      document.getElementById(onId).onclick = () => {
+        document.getElementById(onId).classList.add('active');
+        document.getElementById(offId).classList.remove('active');
+        document.getElementById(onPanel).classList.add('active');
+        document.getElementById(offPanel).classList.remove('active');
+        cb();
+      };
+    });
 
     document.getElementById('shop-earn-btn').onclick  = () => { if (Game.credits >= 25) { Game.credits -= 25; Game.shopBuffs.earnTime  += 60000; UI.render(); saveGame(); } };
     document.getElementById('shop-speed-btn').onclick = () => { if (Game.credits >= 25) { Game.credits -= 25; Game.shopBuffs.speedTime += 30000; UI.render(); saveGame(); } };
@@ -1252,6 +1263,8 @@ const UI = {
       const sToggle = document.getElementById('s-toggle');
       if (sToggle) sToggle.classList.add('muted');
     }
+
+    this.cacheElements();
   },
 
   renderPermUpgrades() {
@@ -1433,25 +1446,26 @@ const UI = {
   },
 
   render() {
-    document.getElementById('cash-display').textContent    = '$' + Game.formatValue(Game.cash, 2);
-    document.getElementById('credit-display').textContent  = Game.formatValue(Game.credits, 0);
-    document.getElementById('current-world-id').textContent = Game.world;
-    document.getElementById('banked-pow-val').textContent  = (1 + Game.bankedPow).toFixed(2) + 'x POW';
+    const e = this.els;
+    e['cash-display'].textContent    = '$' + Game.formatValue(Game.cash, 2);
+    e['credit-display'].textContent  = Game.formatValue(Game.credits, 0);
+    e['current-world-id'].textContent = Game.world;
+    e['banked-pow-val'].textContent  = (1 + Game.bankedPow).toFixed(2) + 'x POW';
 
-    const banner = document.getElementById('nightmare-banner');
+    const banner = e['nightmare-banner'];
     if (Game.nightmareActive) {
       banner.classList.remove('hidden');
-      document.getElementById('nm-run-num').textContent   = Game.nightmareRun;
-      document.getElementById('nm-cycle-num').textContent = Game.cycleNumber;
+      e['nm-run-num'].textContent   = Game.nightmareRun;
+      e['nm-cycle-num'].textContent = Game.cycleNumber;
     } else {
       banner.classList.add('hidden');
     }
 
     const maxColorsInWorld = WORLD_COLORS[Game.world - 1];
     const isReady = Game.canUpgrade();
-    document.getElementById('prestige-btn').className = isReady ? '' : 'locked';
+    e['prestige-btn'].className = isReady ? '' : 'locked';
 
-    const prestigeReqEl = document.getElementById('prestige-req');
+    const prestigeReqEl = e['prestige-req'];
     if (isReady) {
       prestigeReqEl.textContent = "READY!"; prestigeReqEl.style.color = '#80e080';
     } else {
@@ -1475,7 +1489,7 @@ const UI = {
       prestigeReqEl.textContent = displayText; prestigeReqEl.style.color = colorToUse;
     }
 
-    const worldBtn = document.getElementById('next-world-btn');
+    const worldBtn = e['next-world-btn'];
     const currentUnlockedInRun = Game.getVisibleUnlockedCount();
     if (Game.masteryUnlocked) {
       worldBtn.classList.add('mastery-sparkle');
@@ -1515,6 +1529,25 @@ function loop() {
 window.onload = () => {
   loadGame();   // restore save first
   UI.init();    // then build the UI (so button labels restore correctly)
+
+  // Wire up offline popup dismiss button
+  document.getElementById('offline-ok-btn').onclick = () => {
+    document.getElementById('offline-overlay').classList.remove('active');
+  };
+
+  // Show offline income popup if loadGame() stored results
+  if (Game._offlinePopup) {
+    const p = Game._offlinePopup;
+    const hrs  = Math.floor(p.seconds / 3600);
+    const mins = Math.floor((p.seconds % 3600) / 60);
+    document.getElementById('offline-hours-text').textContent =
+      `You were away for ${hrs}h ${mins}m`;
+    document.getElementById('offline-earned-text').textContent =
+      '$' + Game.formatValue(p.earned, 2);
+    document.getElementById('offline-overlay').classList.add('active');
+    Game._offlinePopup = null;
+  }
+
   loop();       // then start the game loop
 };
 
