@@ -746,16 +746,17 @@ const Game = {
   getUpgradeThreshold() {
     const maxColors = WORLD_COLORS[this.world - 1];
     const nextT = this.tracks.find((t, i) => !t.unlocked && i < maxColors);
+    // If all colors in the world are unlocked, allow upgrading at a fixed threshold (e.g., final color level 50)
+    if (!nextT) {
+      return 50;
+    }
     // Only use nextT's parentLv as the threshold if the upgrade we're about
     // to take (lifetimeUpgrades + 1) would actually unlock that color.
     // If the color isn't earnable yet, require maxColors * 50 instead so the
     // player can't trigger a prestige that unlocks a color they haven't reached.
-    if (nextT) {
-      const req = UNLOCKS[nextT.id];
-      if (req && (this.lifetimeUpgrades + 1) > req.upg) {
-        return req.parentLv;
-      }
-      return maxColors * 50;
+    const req = UNLOCKS[nextT.id];
+    if (req && (this.lifetimeUpgrades + 1) > req.upg) {
+      return req.parentLv;
     }
     return maxColors * 50;
   },
@@ -931,6 +932,8 @@ const Game = {
   },
   bankPowAndStay() {
     this.bankedPow = Math.max(this.powFloor, this.bankedPow + this.getPotentialPow());
+    // Reset lifetime upgrades to 0 when banking POW to reset color/upgrade gates
+    this.lifetimeUpgrades = 0;
     this.resetRun();
     document.getElementById('world-overlay').classList.remove('active');
     saveGame();
@@ -973,6 +976,8 @@ const Game = {
     this.world++;
     this.maxWorldUnlocked = Math.max(this.maxWorldUnlocked, this.world);
     this.powFloor = WORLD_REQS[this.world - 1] * 0.7;
+    // Reset lifetime upgrades to 0 when entering a new world to reset color/upgrade gates
+    this.lifetimeUpgrades = 0;
     this.resetRun();
     document.getElementById('world-overlay').classList.remove('active');
     if (wasWorld7FirstClear) {
